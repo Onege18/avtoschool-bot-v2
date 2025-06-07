@@ -52,7 +52,7 @@ async def choose_car(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["instructor"] = instructor
 
     if instructor == "Серик Молдабаев":
-        reply_keyboard = [["Механика"]]
+        reply_keyboard = [["Автомат"]]
     else:
         reply_keyboard = [["Автомат"], ["Механика"]]
 
