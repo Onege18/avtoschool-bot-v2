@@ -3,8 +3,13 @@ import gspread
 import os, json
 from google.oauth2.service_account import Credentials
 
+# ✅ добавили оба scope'а
+scopes = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
 creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
-scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 gc = gspread.authorize(creds)
 sheet = gc.open("Автошкола - Запись").worksheet("slots")
