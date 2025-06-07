@@ -1,6 +1,11 @@
 import urllib.parse
 import gspread
-gc = gspread.service_account(filename="comisiituairkaz-da1a299ae5c8.json")
+import json, os
+from google.oauth2.service_account import Credentials
+
+creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
+creds = Credentials.from_service_account_info(creds_dict)
+gc = gspread.authorize(creds)
 sheet = gc.open("Автошкола - Запись").worksheet("slots")
 
 import logging
