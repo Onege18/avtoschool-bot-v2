@@ -1,10 +1,11 @@
 import urllib.parse
 import gspread
-import json, os
+import os, json
 from google.oauth2.service_account import Credentials
 
 creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
-creds = Credentials.from_service_account_info(creds_dict)
+scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 gc = gspread.authorize(creds)
 sheet = gc.open("Автошкола - Запись").worksheet("slots")
 
@@ -197,4 +198,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
