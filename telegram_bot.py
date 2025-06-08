@@ -211,9 +211,11 @@ async def monitor_payments(application):
         current = sheet.get_all_records()
 
         for i, row in enumerate(current):
+            if i >= len(previous):
+                continue
+
             prev = previous[i]
             telegram_id = row.get("Telegram ID")
-
             if not telegram_id:
                 continue
 
@@ -227,30 +229,28 @@ async def monitor_payments(application):
             ost_now = str(row.get("Остаток", "")).strip()
             ost_prev = str(prev.get("Остаток", "")).strip()
 
-            # 📌 Сначала финальное уведомление — если оба появились с любым порядком
-            if (
-                (pre_now and ost_now) and
-                (not pre_prev or not ost_prev)
-            ):
+            # 🎉 Если сразу оба появились
+            if pre_now and ost_now and not pre_prev and not ost_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
-                    text=f"🎉 Вы полностью оплатили урок:\n"
-                         f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸\nДо встречи на занятии!"
+                    text=f"🎉 Вы полностью оплатили урок!\n"
+                         f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸"
                 )
-            else:
-                # Предоплата появилась
-                if pre_now and not pre_prev:
-                    await application.bot.send_message(
-                        chat_id=telegram_id,
-                        text=f"✅ Ваша предоплата: {pre_now}₸"
-                    )
 
-                # Остаток появился
-                if ost_now and not ost_prev:
-                    await application.bot.send_message(
-                        chat_id=telegram_id,
-                        text=f"✅ Ваш остаток: {ost_now}₸"
-                    )
+            # ✅ Если предоплата появилась впервые
+            elif pre_now and not pre_prev:
+                await application.bot.send_message(
+                    chat_id=telegram_id,
+                    text=f"✅ Ваша предоплата: {pre_now}₸"
+                )
+
+            # ✅ Если остаток добавлен позже
+            elif ost_now and not ost_prev:
+                await application.bot.send_message(
+                    chat_id=telegram_id,
+                    text=f"🎉 Вы полностью оплатили урок!\n"
+                         f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸"
+                )
 
         previous = current
 
