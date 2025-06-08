@@ -202,7 +202,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ... ← другие функции (например, confirm, save_booking_to_sheet, cancel и т.д.)
 
 async def monitor_payments(application):
-    await asyncio.sleep(10)  # Подождать, пока бот запустится
+    await asyncio.sleep(10)  # Подождать запуск бота
     sheet = gc.open("Автошкола - Запись").worksheet("slots")
     previous = sheet.get_all_records()
 
@@ -226,25 +226,24 @@ async def monitor_payments(application):
             ost_now = str(row.get("Остаток", "")).strip()
             ost_prev = str(prev.get("Остаток", "")).strip()
 
-
-            # Предоплата добавлена
+            # Уведомление о предоплате
             if pre_now and not pre_prev:
                 await application.bot.send_message(chat_id=telegram_id, text=f"✅ Ваша предоплата: {pre_now}₸")
 
-            # Остаток добавлен
+            # Уведомление об остатке
             if ost_now and not ost_prev:
-                if pre_now:
-                    await application.bot.send_message(
-                        chat_id=telegram_id,
-                        text=f"✅ Ваша предоплата: {pre_now}₸\n✅ Ваш остаток: {ost_now}₸"
-                    )
-                else:
-                    await application.bot.send_message(
-                        chat_id=telegram_id,
-                        text=f"✅ Ваш остаток: {ost_now}₸"
-                    )
+                await application.bot.send_message(chat_id=telegram_id, text=f"✅ Ваш остаток: {ost_now}₸")
+
+            # Финальное уведомление о полной оплате
+            if (pre_now != pre_prev or ost_now != ost_prev) and pre_now and ost_now:
+                await application.bot.send_message(
+                    chat_id=telegram_id,
+                    text=f"🎉 Вы полностью оплатили урок:\n"
+                         f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸\nДо встречи на занятии!"
+                )
 
         previous = current
+
 
 
 async def on_startup(application):
