@@ -224,12 +224,13 @@ async def monitor_payments(application):
             except:
                 continue
 
-            pre_now = str(row.get("Предоплата", "")).strip()
-            pre_prev = str(prev.get("Предоплата", "")).strip()
-            ost_now = str(row.get("Остаток", "")).strip()
-            ost_prev = str(prev.get("Остаток", "")).strip()
+            # Преобразуем в строки + безопасно
+            pre_now = str(row.get("Предоплата") or "").strip()
+            pre_prev = str(prev.get("Предоплата") or "").strip()
+            ost_now = str(row.get("Остаток") or "").strip()
+            ost_prev = str(prev.get("Остаток") or "").strip()
 
-            # 🎉 Если сразу оба появились
+            # 🎉 Если оба появились одновременно
             if pre_now and ost_now and not pre_prev and not ost_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
@@ -237,22 +238,24 @@ async def monitor_payments(application):
                          f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸"
                 )
 
-            # ✅ Если предоплата появилась впервые
+            # ✅ Сначала — предоплата
             elif pre_now and not pre_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
                     text=f"✅ Ваша предоплата: {pre_now}₸"
                 )
 
-            # ✅ Если остаток добавлен позже
+            # ✅ Потом — остаток (вместе с напоминанием предоплаты)
             elif ost_now and not ost_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
                     text=f"🎉 Вы полностью оплатили урок!\n"
-                         f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸"
+                         f"Предоплата: {pre_now or 'не указана'}₸\n"
+                         f"Остаток: {ost_now}₸"
                 )
 
         previous = current
+
 
 
 
