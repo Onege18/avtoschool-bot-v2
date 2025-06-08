@@ -176,25 +176,20 @@ def save_booking_to_sheet(context):
     time = context.user_data["time"]
     name = context.user_data["name"]
     phone = context.user_data["phone"]
+    telegram_id = context._user_id  # или: update.message.from_user.id
 
     records = slots_sheet.get_all_records()
     for i, row in enumerate(records):
         if row["Инструктор"] == instructor and row["Дата"] == date and row["Время"] == time:
+            row_num = i + 2  # +2, потому что get_all_records пропускает заголовок
 
-            # ✅ Проверка, что нужные колонки точно есть
-            required_keys = ["Инструктор", "Дата", "Время"]
-            for key in required_keys:
-                if key not in row:
-                    print(f"❌ Пропущено поле: {key}")
-                    return
-
-            row_num = i + 2  # +2, чтобы учесть заголовок
-
-            slots_sheet.update_cell(row_num, 3, car)      # Машина (C)
-            slots_sheet.update_cell(row_num, 5, "занято") # Статус (E)
-            slots_sheet.update_cell(row_num, 6, name)     # Имя (F)
-            slots_sheet.update_cell(row_num, 7, phone)    # Телефон (G)
+            slots_sheet.update_cell(row_num, 3, car)         # Машина (C)
+            slots_sheet.update_cell(row_num, 5, "занято")    # Статус (E)
+            slots_sheet.update_cell(row_num, 6, name)        # Имя (F)
+            slots_sheet.update_cell(row_num, 7, phone)       # Телефон (G)
+            slots_sheet.update_cell(row_num, 10, telegram_id)  # Telegram ID (J)
             break
+
 
 
 
@@ -202,6 +197,53 @@ def save_booking_to_sheet(context):
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Бронь остановлена.")
     return ConversationHandler.END
+
+# ... ← другие функции (например, confirm, save_booking_to_sheet, cancel и т.д.)
+
+async def monitor_payments(application):
+    await asyncio.sleep(10)  # Подождать, пока бот запустится
+    sheet = gc.open("Автошкола - Запись").worksheet("slots")
+    previous = sheet.get_all_records()
+
+    while True:
+        await asyncio.sleep(30)  # Проверка каждые 30 секунд
+        current = sheet.get_all_records()
+
+        for i, row in enumerate(current):
+            prev = previous[i]
+            telegram_id = row.get("Telegram ID")
+            if not telegram_id:
+                continue
+
+            try:
+                telegram_id = int(telegram_id)
+            except:
+                continue
+
+            pre_now = row.get("Предоплата", "").strip()
+            pre_prev = prev.get("Предоплата", "").strip()
+            ost_now = row.get("Остаток", "").strip()
+            ost_prev = prev.get("Остаток", "").strip()
+
+            # Предоплата добавлена
+            if pre_now and not pre_prev:
+                await application.bot.send_message(chat_id=telegram_id, text=f"✅ Ваша предоплата: {pre_now}₸")
+
+            # Остаток добавлен
+            if ost_now and not ost_prev:
+                if pre_now:
+                    await application.bot.send_message(
+                        chat_id=telegram_id,
+                        text=f"✅ Ваша предоплата: {pre_now}₸\n✅ Ваш остаток: {ost_now}₸"
+                    )
+                else:
+                    await application.bot.send_message(
+                        chat_id=telegram_id,
+                        text=f"✅ Ваш остаток: {ost_now}₸"
+                    )
+
+        previous = current
+
 
 
 # Основная функция
@@ -226,6 +268,7 @@ def main():
     )
 
     app.add_handler(conv_handler)
+    app.create_task(monitor_payments(app))
     app.run_polling()
 
 if __name__ == "__main__":
