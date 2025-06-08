@@ -178,6 +178,14 @@ def save_booking_to_sheet(context):
     phone = context.user_data["phone"]
 
     records = slots_sheet.get_all_records()
+
+    # внутри save_booking_to_sheet
+    required_keys = ["Инструктор", "Дата", "Время"]
+    for key in required_keys:
+        if key not in row:
+            print(f"❌ Пропущено поле: {key}")
+            return
+
     for i, row in enumerate(records):
         if row["Инструктор"] == instructor and row["Дата"] == date and row["Время"] == time:
             row_num = i + 2  # +2 потому что get_all_records пропускает заголовок
@@ -189,12 +197,7 @@ def save_booking_to_sheet(context):
             slots_sheet.update_cell(row_num, 7, phone)    # Телефон (G)
             break
 
-# внутри save_booking_to_sheet
-required_keys = ["Инструктор", "Дата", "Время"]
-for key in required_keys:
-    if key not in row:
-        print(f"❌ Пропущено поле: {key}")
-        return
+
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
