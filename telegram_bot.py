@@ -245,6 +245,8 @@ async def monitor_payments(application):
         previous = current
 
 
+async def on_startup(application):
+    application.create_task(monitor_payments(application))
 
 # Основная функция
 def main():
@@ -252,7 +254,7 @@ def main():
     job_queue = JobQueue()
     job_queue.scheduler = scheduler
 
-    app = ApplicationBuilder().token(TOKEN).job_queue(job_queue).build()
+    app = ApplicationBuilder().token(TOKEN).job_queue(job_queue).post_init(on_startup).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -268,7 +270,6 @@ def main():
     )
 
     app.add_handler(conv_handler)
-    app.create_task(monitor_payments(app))
     app.run_polling()
 
 if __name__ == "__main__":
