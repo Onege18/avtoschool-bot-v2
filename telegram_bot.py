@@ -221,10 +221,11 @@ async def monitor_payments(application):
             except:
                 continue
 
-            pre_now = row.get("Предоплата", "").strip()
-            pre_prev = prev.get("Предоплата", "").strip()
-            ost_now = row.get("Остаток", "").strip()
-            ost_prev = prev.get("Остаток", "").strip()
+            pre_now = str(row.get("Предоплата", "")).strip()
+            pre_prev = str(prev.get("Предоплата", "")).strip()
+            ost_now = str(row.get("Остаток", "")).strip()
+            ost_prev = str(prev.get("Остаток", "")).strip()
+
 
             # Предоплата добавлена
             if pre_now and not pre_prev:
