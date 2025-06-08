@@ -178,19 +178,18 @@ def save_booking_to_sheet(context):
     phone = context.user_data["phone"]
 
     records = slots_sheet.get_all_records()
-
-    # внутри save_booking_to_sheet
-    required_keys = ["Инструктор", "Дата", "Время"]
-    for key in required_keys:
-        if key not in row:
-            print(f"❌ Пропущено поле: {key}")
-            return
-
     for i, row in enumerate(records):
         if row["Инструктор"] == instructor and row["Дата"] == date and row["Время"] == time:
-            row_num = i + 2  # +2 потому что get_all_records пропускает заголовок
 
-            # Обновляем все нужные поля в найденной строке
+            # ✅ Проверка, что нужные колонки точно есть
+            required_keys = ["Инструктор", "Дата", "Время"]
+            for key in required_keys:
+                if key not in row:
+                    print(f"❌ Пропущено поле: {key}")
+                    return
+
+            row_num = i + 2  # +2, чтобы учесть заголовок
+
             slots_sheet.update_cell(row_num, 3, car)      # Машина (C)
             slots_sheet.update_cell(row_num, 5, "занято") # Статус (E)
             slots_sheet.update_cell(row_num, 6, name)     # Имя (F)
