@@ -144,6 +144,8 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await get_phone(update, context)
 
     context.user_data["phone"] = update.message.text
+    context.user_data["telegram_id"] = update.effective_user.id  # ✅ ШАГ 1 — ВСТАВИТЬ СЮДА
+
     instructor = context.user_data["instructor"]
     car = context.user_data["car"]
     date = context.user_data["date"]
@@ -155,7 +157,7 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     whatsapp_message = (
         f"Здравствуйте, я {name} записал(-ась) на урок вождения! "
-        f"Инструктор: {instructor}, Время: {time}, Дата: {date}"
+        f"Инструктор: {instructor}, Машина: {car}, Время: {time}, Дата: {date}"
     )
 
     encoded_message = urllib.parse.quote(whatsapp_message)
@@ -164,6 +166,7 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Бронь подтверждена!\n\n"
                                     f"👉 Напишите нам в WhatsApp:\n{whatsapp_url}")
     return ConversationHandler.END
+
 
 
 # Сохранение записи только в листе slots
@@ -176,22 +179,20 @@ def save_booking_to_sheet(context):
     time = context.user_data["time"]
     name = context.user_data["name"]
     phone = context.user_data["phone"]
-    telegram_id = context._user_id  # или: update.message.from_user.id
+    telegram_id = context._user_id  # ← Вот тут получаем ID пользователя
 
     records = slots_sheet.get_all_records()
     for i, row in enumerate(records):
         if row["Инструктор"] == instructor and row["Дата"] == date and row["Время"] == time:
-            row_num = i + 2  # +2, потому что get_all_records пропускает заголовок
+            row_num = i + 2  # +2, чтобы учесть заголовок
 
-            slots_sheet.update_cell(row_num, 3, car)         # Машина (C)
-            slots_sheet.update_cell(row_num, 5, "занято")    # Статус (E)
-            slots_sheet.update_cell(row_num, 6, name)        # Имя (F)
-            slots_sheet.update_cell(row_num, 7, phone)       # Телефон (G)
+            # Обновляем все поля
+            slots_sheet.update_cell(row_num, 3, car)        # Машина (C)
+            slots_sheet.update_cell(row_num, 5, "занято")   # Статус (E)
+            slots_sheet.update_cell(row_num, 6, name)       # Имя (F)
+            slots_sheet.update_cell(row_num, 7, phone)      # Телефон (G)
             slots_sheet.update_cell(row_num, 10, telegram_id)  # Telegram ID (J)
             break
-
-
-
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -254,7 +255,7 @@ def main():
     job_queue = JobQueue()
     job_queue.scheduler = scheduler
 
-    app = ApplicationBuilder().token(TOKEN).job_queue(job_queue).post_init(on_startup).build()
+    app = ApplicationBuilder().token(TOKEN).job_queue(job_queue).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -270,6 +271,12 @@ def main():
     )
 
     app.add_handler(conv_handler)
+
+    # ✅ Запускаем мониторинг предоплаты и остатка
+    async def post_init(application):
+        application.create_task(monitor_payments(application))
+
+    app.post_init = post_init
     app.run_polling()
 
 if __name__ == "__main__":
