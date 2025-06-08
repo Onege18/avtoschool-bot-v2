@@ -166,9 +166,8 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-# Сохранение записи
+# Сохранение записи только в листе slots
 def save_booking_to_sheet(context):
-    booking_sheet = gc.open("Автошкола - Запись").worksheet("bookings")
     slots_sheet = gc.open("Автошкола - Запись").worksheet("slots")
 
     instructor = context.user_data["instructor"]
@@ -178,14 +177,24 @@ def save_booking_to_sheet(context):
     name = context.user_data["name"]
     phone = context.user_data["phone"]
 
-    booking_sheet.append_row([name, instructor, car, date, time, phone])
-
     records = slots_sheet.get_all_records()
     for i, row in enumerate(records):
         if row["Инструктор"] == instructor and row["Дата"] == date and row["Время"] == time:
-            cell_row = i + 2
-            slots_sheet.update_cell(cell_row, 5, "занято")
+            row_num = i + 2  # +2 потому что get_all_records пропускает заголовок
+
+            # Обновляем все нужные поля в найденной строке
+            slots_sheet.update_cell(row_num, 3, car)      # Машина (C)
+            slots_sheet.update_cell(row_num, 5, "занято") # Статус (E)
+            slots_sheet.update_cell(row_num, 6, name)     # Имя (F)
+            slots_sheet.update_cell(row_num, 7, phone)    # Телефон (G)
             break
+
+# внутри save_booking_to_sheet
+required_keys = ["Инструктор", "Дата", "Время"]
+for key in required_keys:
+    if key not in row:
+        print(f"❌ Пропущено поле: {key}")
+        return
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
