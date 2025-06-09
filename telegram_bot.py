@@ -179,19 +179,19 @@ def save_booking_to_sheet(context):
     time = context.user_data["time"]
     name = context.user_data["name"]
     phone = context.user_data["phone"]
-    telegram_id = context._user_id  # ← Вот тут получаем ID пользователя
+    telegram_id = context._user_id  # ⚠️ Telegram ID
 
     records = slots_sheet.get_all_records()
     for i, row in enumerate(records):
         if row["Инструктор"] == instructor and row["Дата"] == date and row["Время"] == time:
-            row_num = i + 2  # +2, чтобы учесть заголовок
+            row_num = i + 2  # строка, в которую пишем
 
-            # Обновляем все поля
+            # Обновляем поля
             slots_sheet.update_cell(row_num, 3, car)        # Машина (C)
             slots_sheet.update_cell(row_num, 5, "занято")   # Статус (E)
             slots_sheet.update_cell(row_num, 6, name)       # Имя (F)
             slots_sheet.update_cell(row_num, 7, phone)      # Телефон (G)
-            slots_sheet.update_cell(row_num, 10, telegram_id)  # Telegram ID (J)
+            slots_sheet.update_cell(row_num, 11, telegram_id)  # ✅ Telegram ID (K, колонка №11)
             break
 
 
