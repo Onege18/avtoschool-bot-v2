@@ -1,31 +1,5 @@
 import urllib.parse
 import gspread
-
-def get_all_month_sheets():
-    spreadsheet = gc.open("Автошкола - Запись")
-    return [sheet for sheet in spreadsheet.worksheets() if " - 202" in sheet.title and sheet.title != "Архив"]
-
-def append_to_archive():
-    spreadsheet = gc.open("Автошкола - Запись")
-    try:
-        archive = spreadsheet.worksheet("Архив")
-    except gspread.exceptions.WorksheetNotFound:
-        archive = spreadsheet.add_worksheet("Архив", rows="1000", cols="11")
-        archive.append_row([
-            "Дата", "Время", "Машина", "Инструктор", "Статус",
-            "Имя", "Телефон", "", "Предоплата", "Остаток", "Telegram ID"
-        ])
-
-    existing_rows = archive.get_all_values()
-    existing_set = set(tuple(row) for row in existing_rows[1:])  # без заголовков
-
-    for sheet in get_all_month_sheets():
-        data = sheet.get_all_values()
-        for row in data[1:]:  # Пропустить заголовки
-            if tuple(row) not in existing_set:
-                archive.append_row(row)
-
-import os, json
 import datetime
 
 def get_active_sheet_name():
@@ -39,6 +13,7 @@ def get_active_sheet_name():
     year = datetime.datetime.now().year
     return f"{ru_months[month]} - {year}"
 
+import os, json
 from google.oauth2.service_account import Credentials
 
 # ✅ добавили оба scope'а
@@ -50,6 +25,34 @@ scopes = [
 creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
 creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 gc = gspread.authorize(creds)
+
+from datetime import datetime
+
+def ensure_monthly_sheet_exists(gc):
+    import calendar
+
+    # Получаем текущий месяц и год
+    now = datetime.now()
+    month_name_ru = {
+        1: "Январь", 2: "Февраль", 3: "Март", 4: "Апрель", 5: "Май", 6: "Июнь",
+        7: "Июль", 8: "Август", 9: "Сентябрь", 10: "Октябрь", 11: "Ноябрь", 12: "Декабрь"
+    }[now.month]
+    sheet_name = f"{month_name_ru} - {now.year}"
+
+    # Открываем таблицу
+    spreadsheet = gc.open("Автошкола - Запись")
+
+    try:
+        sheet = spreadsheet.worksheet(sheet_name)  # Пытаемся найти лист
+    except gspread.exceptions.WorksheetNotFound:
+        # Создаём, если не найден
+        sheet = spreadsheet.add_worksheet(title=sheet_name, rows="100", cols="10")
+        headers = ["Дата", "Время", "Машина", "Инструктор", "Статус", "Имя", "Телефон", "Предоплата", "Остаток", "Telegram ID"]
+        sheet.insert_row(headers, 1)
+
+    return sheet
+
+sheet = gc.open("Автошкола - Запись").worksheet("slots")
 
 import logging
 import asyncio
@@ -221,7 +224,7 @@ def get_active_sheet():
 
 # Сохранение записи только в листе slots
 def save_booking_to_sheet(context):
-    slots_sheet = get_active_sheet()
+    slots_sheet = gc.open("Автошкола - Запись").worksheet("slots")
 
     instructor = context.user_data["instructor"]
     car = context.user_data["car"]
@@ -249,16 +252,10 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Бронь остановлена.")
     return ConversationHandler.END
 
-async def archive_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        append_to_archive()
-        await update.message.reply_text("📦 Архив успешно обновлён!")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Ошибка при архивации: {e}")
 
 async def monitor_payments(application):
     await asyncio.sleep(10)
-    sheet = get_active_sheet()
+    sheet = gc.open("Автошкола - Запись").worksheet("slots")
     previous = sheet.get_all_records()
 
     while True:
@@ -342,9 +339,8 @@ def main():
     )
 
     app.add_handler(conv_handler)
-    app.add_handler(CommandHandler("archive", archive_command))
 
-    # ✅ Запускаем мониторинг предоплаты и остатка
+    # ✅ Только мониторинг оплат
     async def post_init(application):
         application.create_task(monitor_payments(application))
 
@@ -353,6 +349,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
