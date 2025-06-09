@@ -1,5 +1,14 @@
 import urllib.parse
 import gspread
+from fastapi import FastAPI
+import uvicorn
+
+# создаем FastAPI-приложение
+api_app = FastAPI()
+
+@api_app.get("/ping")
+async def ping():
+    return {"status": "alive"}
 
 def get_all_month_sheets():
     spreadsheet = gc.open("Автошкола - Запись")
@@ -325,14 +334,19 @@ def main():
     )
 
     app.add_handler(conv_handler)
-    app.add_handler(CommandHandler("archive", archive_command))
 
-    # ✅ Запускаем мониторинг предоплаты и остатка
     async def post_init(application):
         application.create_task(monitor_payments(application))
 
     app.post_init = post_init
+
+    # 🔥 запустить и FastAPI, и Telegram-бот
+    import threading
+    threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=8000)).start()
+
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
+
