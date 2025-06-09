@@ -1,44 +1,6 @@
 import urllib.parse
 import gspread
-
-def get_all_month_sheets():
-    spreadsheet = gc.open("Автошкола - Запись")
-    return [sheet for sheet in spreadsheet.worksheets() if " - 202" in sheet.title and sheet.title != "Архив"]
-
-def append_to_archive():
-    spreadsheet = gc.open("Автошкола - Запись")
-    try:
-        archive = spreadsheet.worksheet("Архив")
-    except gspread.exceptions.WorksheetNotFound:
-        archive = spreadsheet.add_worksheet("Архив", rows="1000", cols="11")
-        archive.append_row([
-            "Дата", "Время", "Машина", "Инструктор", "Статус",
-            "Имя", "Телефон", "", "Предоплата", "Остаток", "Telegram ID"
-        ])
-
-    existing_rows = archive.get_all_values()
-    existing_set = set(tuple(row) for row in existing_rows[1:])  # без заголовков
-
-    for sheet in get_all_month_sheets():
-        data = sheet.get_all_values()
-        for row in data[1:]:  # Пропустить заголовки
-            if tuple(row) not in existing_set:
-                archive.append_row(row)
-
 import os, json
-import datetime
-
-def get_active_sheet_name():
-    ru_months = {
-        "January": "Январь", "February": "Февраль", "March": "Март",
-        "April": "Апрель", "May": "Май", "June": "Июнь",
-        "July": "Июль", "August": "Август", "September": "Сентябрь",
-        "October": "Октябрь", "November": "Ноябрь", "December": "Декабрь"
-    }
-    month = datetime.datetime.now().strftime("%B")
-    year = datetime.datetime.now().year
-    return f"{ru_months[month]} - {year}"
-
 from google.oauth2.service_account import Credentials
 
 # ✅ добавили оба scope'а
@@ -50,6 +12,7 @@ scopes = [
 creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
 creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 gc = gspread.authorize(creds)
+sheet = gc.open("Автошкола - Запись").worksheet("slots")
 
 import logging
 import asyncio
@@ -110,7 +73,7 @@ async def choose_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["car"] = update.message.text
     instructor = context.user_data["instructor"]
 
-    records = get_active_sheet().get_all_records()
+    records = sheet.get_all_records()
     available_dates = sorted(list(set(
         row["Дата"] for row in records
         if row["Инструктор"] == instructor and row["Статус"].lower() == "свободно"
@@ -136,7 +99,7 @@ async def choose_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     instructor = context.user_data["instructor"]
     date = context.user_data["date"]
 
-    records = get_active_sheet().get_all_records()
+    records = sheet.get_all_records()
     available_times = [
         row["Время"] for row in records
         if row["Инструктор"] == instructor and row["Дата"] == date and row["Статус"].lower() == "свободно"
@@ -204,24 +167,11 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                     f"👉 Напишите нам в WhatsApp:\n{whatsapp_url}")
     return ConversationHandler.END
 
-def get_active_sheet():
-    sheet = gc.open("Автошкола - Запись")
-    sheet_name = get_active_sheet_name()
-    try:
-        return sheet.worksheet(sheet_name)
-    except gspread.exceptions.WorksheetNotFound:
-        # Если листа нет — создаём с нужной шапкой
-        new_sheet = sheet.add_worksheet(title=sheet_name, rows="1000", cols="11")
-        new_sheet.append_row([
-            "Дата", "Время", "Машина", "Инструктор", "Статус",
-            "Имя", "Телефон", "", "Предоплата", "Остаток", "Telegram ID"
-        ])
-        return new_sheet
 
 
 # Сохранение записи только в листе slots
 def save_booking_to_sheet(context):
-    slots_sheet = get_active_sheet()
+    slots_sheet = gc.open("Автошкола - Запись").worksheet("slots")
 
     instructor = context.user_data["instructor"]
     car = context.user_data["car"]
@@ -252,7 +202,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def monitor_payments(application):
     await asyncio.sleep(10)
-    sheet = get_active_sheet()
+    sheet = gc.open("Автошкола - Запись").worksheet("slots")
     previous = sheet.get_all_records()
 
     while True:
@@ -339,7 +289,6 @@ def main():
 
     # ✅ Запускаем мониторинг предоплаты и остатка
     async def post_init(application):
-        append_to_archive()  # ← Вставили эту строку
         application.create_task(monitor_payments(application))
 
     app.post_init = post_init
@@ -347,6 +296,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 
