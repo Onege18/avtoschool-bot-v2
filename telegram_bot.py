@@ -208,14 +208,18 @@ def normalize(value):
     except Exception:
         return ""
 
+
 async def monitor_payments(application):
+    print("📡 monitor_payments стартовал")
     await asyncio.sleep(10)
+
     sheet = gc.open("Автошкола - Запись").worksheet("slots")
     previous = sheet.get_all_records()
 
     while True:
         await asyncio.sleep(30)
         current = sheet.get_all_records()
+        print("🔁 Проверка обновлений...")
 
         for i, row in enumerate(current):
             if i >= len(previous):
@@ -223,37 +227,58 @@ async def monitor_payments(application):
 
             prev = previous[i]
             telegram_id = row.get("Telegram ID")
+            print(f"👤 Строка {i + 2} — Telegram ID: {telegram_id}")
+
             if not telegram_id:
+                print("⛔ Telegram ID отсутствует, пропуск")
                 continue
 
             try:
                 telegram_id = int(telegram_id)
             except:
+                print("❌ Невалидный Telegram ID, пропуск")
                 continue
 
-            # Нормализуем значения
-            pre_now = normalize(row.get("Предоплата"))
-            pre_prev = normalize(prev.get("Предоплата"))
-            ost_now = normalize(row.get("Остаток"))
-            ost_prev = normalize(prev.get("Остаток"))
+            def norm(v):
+                return str(v).strip() if v is not None else ""
 
-            # Только что добавлена предоплата
-            if pre_now and not pre_prev:
+            pre_now = norm(row.get("Предоплата"))
+            pre_prev = norm(prev.get("Предоплата"))
+            ost_now = norm(row.get("Остаток"))
+            ost_prev = norm(prev.get("Остаток"))
+
+            print(f"📊 Предоплата: раньше='{pre_prev}' → сейчас='{pre_now}'")
+            print(f"📊 Остаток: раньше='{ost_prev}' → сейчас='{ost_now}'")
+
+            # 🎉 Полная оплата за один раз (и предоплата, и остаток)
+            if pre_now and ost_now and not pre_prev and not ost_prev:
+                print("✅ Полная оплата сразу — отправляем уведомление")
+                await application.bot.send_message(
+                    chat_id=telegram_id,
+                    text=f"🎉 Вы полностью оплатили урок!\n"
+                         f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸"
+                )
+
+            # 💰 Только что добавлена предоплата
+            elif pre_now and not pre_prev:
+                print("📩 Предоплата появилась — отправляем уведомление")
                 await application.bot.send_message(
                     chat_id=telegram_id,
                     text=f"✅ Ваша предоплата: {pre_now}₸"
                 )
 
-            # Только что добавлен остаток
-            if ost_now and not ost_prev:
-                # проверим, есть ли уже предоплата (сейчас или раньше)
-                pre_value = pre_now if pre_now else pre_prev
-                if pre_value:
+            # 💰 Только что добавлен остаток, при наличии предоплаты
+            elif ost_now and not ost_prev:
+                if pre_now or pre_prev:
+                    full_pre = pre_now if pre_now else pre_prev
+                    print("📩 Остаток появился — отправляем уведомление о полной оплате")
                     await application.bot.send_message(
                         chat_id=telegram_id,
                         text=f"🎉 Вы полностью оплатили урок!\n"
-                             f"Предоплата: {pre_value}₸\nОстаток: {ost_now}₸"
+                             f"Предоплата: {full_pre}₸\nОстаток: {ost_now}₸"
                     )
+                else:
+                    print("⚠️ Остаток появился, но нет предоплаты — уведомление не отправлено")
 
         previous = current
 
