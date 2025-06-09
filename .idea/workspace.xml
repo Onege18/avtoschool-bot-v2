@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="793e29f1-0bee-4a10-bfc7-672a4a3686af" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/telegram_bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -71,7 +70,7 @@
       <workItem from="1749286228005" duration="5127000" />
       <workItem from="1749293543729" duration="399000" />
       <workItem from="1749295132071" duration="15043000" />
-      <workItem from="1749459488657" duration="2383000" />
+      <workItem from="1749459488657" duration="2647000" />
     </task>
     <servers />
   </component>

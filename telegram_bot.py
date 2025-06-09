@@ -249,6 +249,12 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Бронь остановлена.")
     return ConversationHandler.END
 
+async def archive_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        append_to_archive()
+        await update.message.reply_text("📦 Архив успешно обновлён!")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка при архивации: {e}")
 
 async def monitor_payments(application):
     await asyncio.sleep(10)
@@ -336,10 +342,10 @@ def main():
     )
 
     app.add_handler(conv_handler)
+    app.add_handler(CommandHandler("archive", archive_command))
 
     # ✅ Запускаем мониторинг предоплаты и остатка
     async def post_init(application):
-        append_to_archive()  # ← Вставили эту строку
         application.create_task(monitor_payments(application))
 
     app.post_init = post_init
