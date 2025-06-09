@@ -209,13 +209,13 @@ async def monitor_payments(application):
         await asyncio.sleep(30)
         current = sheet.get_all_records()
 
-        for i, row_dict in enumerate(current):
+        for i, row in enumerate(current):
             if i >= len(previous):
                 continue
 
-            prev_dict = previous[i]
-            telegram_id = row_dict.get("Telegram ID")
+            prev = previous[i]
 
+            telegram_id = str(row.get("Telegram ID", "")).strip()
             if not telegram_id:
                 continue
 
@@ -224,46 +224,36 @@ async def monitor_payments(application):
             except:
                 continue
 
-            # Получаем значения из таблицы
-            pre_now_raw = row_dict.get("Предоплата")
-            pre_prev_raw = prev_dict.get("Предоплата")
-            ost_now_raw = row_dict.get("Остаток")
-            ost_prev_raw = prev_dict.get("Остаток")
+            # теперь используем новые колонки:
+            pre_now = str(row.get("Предоплата", "")).strip()
+            pre_prev = str(prev.get("Предоплата", "")).strip()
+            ost_now = str(row.get("Остаток", "")).strip()
+            ost_prev = str(prev.get("Остаток", "")).strip()
 
-            # Приводим всё к строкам
-            pre_now = str(pre_now_raw or "").strip()
-            pre_prev = str(pre_prev_raw or "").strip()
-            ost_now = str(ost_now_raw or "").strip()
-            ost_prev = str(ost_prev_raw or "").strip()
-
-            # Отладка
-            print(f"[row {i}] pre_now={pre_now}, pre_prev={pre_prev}, ost_now={ost_now}, ost_prev={ost_prev}")
-
-            # 🎉 Если предоплата и остаток только что появились
-            if pre_now and ost_now and (not pre_prev or pre_prev == "0") and (not ost_prev or ost_prev == "0"):
+            # 🎉 если впервые указаны оба значения
+            if pre_now and ost_now and (not pre_prev or pre_prev != pre_now) and (not ost_prev or ost_prev != ost_now):
                 await application.bot.send_message(
                     chat_id=telegram_id,
-                    text=f"🎉 Вы полностью оплатили урок!\n"
-                         f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸"
+                    text=f"🎉 Вы полностью оплатили урок!\nПредоплата: {pre_now}₸\nОстаток: {ost_now}₸"
                 )
 
-            # ✅ Если появилась только предоплата
-            elif pre_now and (not pre_prev or pre_prev == "0") and (not ost_now or ost_now == "0"):
+            # ✅ если появилась только предоплата
+            elif pre_now and not pre_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
                     text=f"✅ Ваша предоплата: {pre_now}₸"
                 )
 
-            # ✅ Если появился только остаток
-            elif ost_now and (not ost_prev or ost_prev == "0"):
-                full_pre = pre_now if pre_now else pre_prev
+            # ✅ если появилась только остаток
+            elif ost_now and not ost_prev:
+                full_pre = pre_now if pre_now else pre_prev or "не указана"
                 await application.bot.send_message(
                     chat_id=telegram_id,
-                    text=f"🎉 Вы полностью оплатили урок!\n"
-                         f"Предоплата: {full_pre if full_pre else 'не указана'}₸\nОстаток: {ost_now}₸"
+                    text=f"🎉 Вы полностью оплатили урок!\nПредоплата: {full_pre}₸\nОстаток: {ost_now}₸"
                 )
 
         previous = current
+
 
 
 async def on_startup(application):
