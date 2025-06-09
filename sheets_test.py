@@ -29,11 +29,10 @@ def get_available_slots_for_instructor(instructor):
     return available
 
 
-# 🔹 Добавить бронь + пометить слот как занятый
+# 🔹 Добавить бронь в slots (без bookings)
 def add_booking(client_name, phone, date, time, instructor):
     slots = spreadsheet.worksheet("slots")
     rows = slots.get_all_records()
-    car = None
     row_index = None
 
     for i, row in enumerate(rows):
@@ -43,21 +42,19 @@ def add_booking(client_name, phone, date, time, instructor):
             row["Инструктор"] == instructor and
             row["Статус"].lower() == "свободно"
         ):
-            car = row["Машина"]
-            row_index = i + 2  # +2 потому что индекс Python начинается с 0, и 1 строка — заголовки
+            row_index = i + 2  # +2 — чтобы учесть заголовки
             break
 
-    if not car:
+    if not row_index:
         print("❌ Слот не найден или уже занят")
         return
 
-    bookings = spreadsheet.worksheet("bookings")
-    bookings.append_row([client_name, instructor, car, date, time, phone])
-    print("✅ Бронь добавлена")
+    # Обновить слот:
+    slots.update_cell(row_index, 5, "занято")       # Статус (E)
+    slots.update_cell(row_index, 6, client_name)    # Имя клиента (F)
+    slots.update_cell(row_index, 7, phone)          # Телефон (G)
 
-    # Обновить слот как занятый
-    slots.update_cell(row_index, 5, "занято")
-    print("🔒 Слот помечен как занятый")
+    print("✅ Бронь успешно добавлена в слот")
 
 
 # 🔹 Пример использования:
