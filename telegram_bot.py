@@ -199,7 +199,14 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Бронь остановлена.")
     return ConversationHandler.END
 
-# ... ← другие функции (например, confirm, save_booking_to_sheet, cancel и т.д.)
+def normalize(value):
+    """Гарантированно возвращает строку или пустую строку"""
+    try:
+        if value is None:
+            return ""
+        return str(value).strip()
+    except Exception:
+        return ""
 
 async def monitor_payments(application):
     await asyncio.sleep(10)
@@ -224,36 +231,29 @@ async def monitor_payments(application):
             except:
                 continue
 
-            # Приводим всё к строкам
-            pre_now = str(row.get("Предоплата") or "").strip()
-            pre_prev = str(prev.get("Предоплата") or "").strip()
-            ost_now = str(row.get("Остаток") or "").strip()
-            ost_prev = str(prev.get("Остаток") or "").strip()
+            # Нормализуем значения
+            pre_now = normalize(row.get("Предоплата"))
+            pre_prev = normalize(prev.get("Предоплата"))
+            ost_now = normalize(row.get("Остаток"))
+            ost_prev = normalize(prev.get("Остаток"))
 
-            # 🎉 Если предоплата и остаток только что появились
-            if pre_now and ost_now and not pre_prev and not ost_prev:
-                await application.bot.send_message(
-                    chat_id=telegram_id,
-                    text=f"🎉 Вы полностью оплатили урок!\n"
-                         f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸"
-                )
-
-            # ✅ Если появилась только предоплата
-            elif pre_now and not pre_prev:
+            # Только что добавлена предоплата
+            if pre_now and not pre_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
                     text=f"✅ Ваша предоплата: {pre_now}₸"
                 )
 
-            # ✅ Если появилась только остаток (предоплата уже была)
-            elif ost_now and not ost_prev:
-                # берём старую предоплату (она уже была)
-                full_pre = pre_now if pre_now else pre_prev
-                await application.bot.send_message(
-                    chat_id=telegram_id,
-                    text=f"🎉 Вы полностью оплатили урок!\n"
-                         f"Предоплата: {full_pre}₸\nОстаток: {ost_now}₸"
-                )
+            # Только что добавлен остаток
+            if ost_now and not ost_prev:
+                # проверим, есть ли уже предоплата (сейчас или раньше)
+                pre_value = pre_now if pre_now else pre_prev
+                if pre_value:
+                    await application.bot.send_message(
+                        chat_id=telegram_id,
+                        text=f"🎉 Вы полностью оплатили урок!\n"
+                             f"Предоплата: {pre_value}₸\nОстаток: {ost_now}₸"
+                    )
 
         previous = current
 
