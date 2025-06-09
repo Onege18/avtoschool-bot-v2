@@ -214,47 +214,52 @@ async def monitor_payments(application):
                 continue
 
             prev = previous[i]
-
-            telegram_id = str(row.get("Telegram ID", "")).strip()
+            telegram_id = row.get("Telegram ID")
             if not telegram_id:
                 continue
 
             try:
                 telegram_id = int(telegram_id)
-            except:
+            except ValueError:
                 continue
 
-            # теперь используем новые колонки:
-            pre_now = str(row.get("Предоплата", "")).strip()
-            pre_prev = str(prev.get("Предоплата", "")).strip()
-            ost_now = str(row.get("Остаток", "")).strip()
-            ost_prev = str(prev.get("Остаток", "")).strip()
+            # ✅ Приводим к строкам
+            pre_now = str(row.get("Предоплата", "") or "").strip()
+            pre_prev = str(prev.get("Предоплата", "") or "").strip()
+            ost_now = str(row.get("Остаток", "") or "").strip()
+            ost_prev = str(prev.get("Остаток", "") or "").strip()
 
-            # 🎉 если впервые указаны оба значения
-            if pre_now and ost_now and (not pre_prev or pre_prev != pre_now) and (not ost_prev or ost_prev != ost_now):
+            # 🎉 Обе суммы появились впервые
+            if pre_now and ost_now and (not pre_prev and not ost_prev):
                 await application.bot.send_message(
                     chat_id=telegram_id,
-                    text=f"🎉 Вы полностью оплатили урок!\nПредоплата: {pre_now}₸\nОстаток: {ost_now}₸"
+                    text=f"🎉 Вы полностью оплатили урок!\n"
+                         f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸"
                 )
 
-            # ✅ если появилась только предоплата
+            # ✅ Добавлена только предоплата
             elif pre_now and not pre_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
                     text=f"✅ Ваша предоплата: {pre_now}₸"
                 )
 
-            # ✅ если появилась только остаток
+            # ✅ Добавлен только остаток
             elif ost_now and not ost_prev:
-                full_pre = pre_now if pre_now else pre_prev or "не указана"
-                await application.bot.send_message(
-                    chat_id=telegram_id,
-                    text=f"🎉 Вы полностью оплатили урок!\nПредоплата: {full_pre}₸\nОстаток: {ost_now}₸"
-                )
+                final_pre = pre_now if pre_now else pre_prev
+                if final_pre:
+                    await application.bot.send_message(
+                        chat_id=telegram_id,
+                        text=f"🎉 Вы полностью оплатили урок!\n"
+                             f"Предоплата: {final_pre}₸\nОстаток: {ost_now}₸"
+                    )
+                else:
+                    await application.bot.send_message(
+                        chat_id=telegram_id,
+                        text=f"✅ Ваш остаток: {ost_now}₸"
+                    )
 
         previous = current
-
-
 
 async def on_startup(application):
     application.create_task(monitor_payments(application))
