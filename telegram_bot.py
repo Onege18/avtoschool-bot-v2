@@ -199,27 +199,15 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Бронь остановлена.")
     return ConversationHandler.END
 
-def normalize(value):
-    """Гарантированно возвращает строку или пустую строку"""
-    try:
-        if value is None:
-            return ""
-        return str(value).strip()
-    except Exception:
-        return ""
-
 
 async def monitor_payments(application):
-    print("📡 monitor_payments стартовал")
     await asyncio.sleep(10)
-
     sheet = gc.open("Автошкола - Запись").worksheet("slots")
     previous = sheet.get_all_records()
 
     while True:
         await asyncio.sleep(30)
         current = sheet.get_all_records()
-        print("🔁 Проверка обновлений...")
 
         for i, row in enumerate(current):
             if i >= len(previous):
@@ -227,60 +215,49 @@ async def monitor_payments(application):
 
             prev = previous[i]
             telegram_id = row.get("Telegram ID")
-            print(f"👤 Строка {i + 2} — Telegram ID: {telegram_id}")
-
             if not telegram_id:
-                print("⛔ Telegram ID отсутствует, пропуск")
                 continue
 
             try:
                 telegram_id = int(telegram_id)
             except:
-                print("❌ Невалидный Telegram ID, пропуск")
                 continue
 
-            def norm(v):
-                return str(v).strip() if v is not None else ""
+            # Приводим всё к строкам
+            pre_now = str(row.get("Предоплата") or "").strip()
+            pre_prev = str(prev.get("Предоплата") or "").strip()
+            ost_now = str(row.get("Остаток") or "").strip()
+            ost_prev = str(prev.get("Остаток") or "").strip()
 
-            pre_now = norm(row.get("Предоплата"))
-            pre_prev = norm(prev.get("Предоплата"))
-            ost_now = norm(row.get("Остаток"))
-            ost_prev = norm(prev.get("Остаток"))
-
-            print(f"📊 Предоплата: раньше='{pre_prev}' → сейчас='{pre_now}'")
-            print(f"📊 Остаток: раньше='{ost_prev}' → сейчас='{ost_now}'")
-
-            # 🎉 Полная оплата за один раз (и предоплата, и остаток)
+            # 🎉 Если предоплата и остаток только что появились
             if pre_now and ost_now and not pre_prev and not ost_prev:
-                print("✅ Полная оплата сразу — отправляем уведомление")
                 await application.bot.send_message(
                     chat_id=telegram_id,
                     text=f"🎉 Вы полностью оплатили урок!\n"
                          f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸"
                 )
 
-            # 💰 Только что добавлена предоплата
+            # ✅ Если появилась только предоплата
             elif pre_now and not pre_prev:
-                print("📩 Предоплата появилась — отправляем уведомление")
                 await application.bot.send_message(
                     chat_id=telegram_id,
                     text=f"✅ Ваша предоплата: {pre_now}₸"
                 )
 
-            # 💰 Только что добавлен остаток, при наличии предоплаты
+            # ✅ Если появилась только остаток (предоплата уже была)
             elif ost_now and not ost_prev:
-                if pre_now or pre_prev:
-                    full_pre = pre_now if pre_now else pre_prev
-                    print("📩 Остаток появился — отправляем уведомление о полной оплате")
-                    await application.bot.send_message(
-                        chat_id=telegram_id,
-                        text=f"🎉 Вы полностью оплатили урок!\n"
-                             f"Предоплата: {full_pre}₸\nОстаток: {ost_now}₸"
-                    )
-                else:
-                    print("⚠️ Остаток появился, но нет предоплаты — уведомление не отправлено")
+                # берём старую предоплату (она уже была)
+                full_pre = pre_now if pre_now else pre_prev
+                await application.bot.send_message(
+                    chat_id=telegram_id,
+                    text=f"🎉 Вы полностью оплатили урок!\n"
+                         f"Предоплата: {full_pre}₸\nОстаток: {ost_now}₸"
+                )
 
         previous = current
+
+
+
 
 
 async def on_startup(application):
