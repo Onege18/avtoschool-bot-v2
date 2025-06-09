@@ -279,41 +279,24 @@ async def monitor_payments(application):
             except ValueError:
                 continue
 
-            # ✅ Приводим к строкам
             pre_now = str(row.get("Предоплата", "") or "").strip()
             pre_prev = str(prev.get("Предоплата", "") or "").strip()
             ost_now = str(row.get("Остаток", "") or "").strip()
             ost_prev = str(prev.get("Остаток", "") or "").strip()
 
-            # 🎉 Обе суммы появились впервые
-            if pre_now and ost_now and (not pre_prev and not ost_prev):
-                await application.bot.send_message(
-                    chat_id=telegram_id,
-                    text=f"🎉 Вы полностью оплатили урок!\n"
-                         f"Предоплата: {pre_now}₸\nОстаток: {ost_now}₸"
-                )
-
-            # ✅ Добавлена только предоплата
-            elif pre_now and not pre_prev:
+            # ✅ Предоплата добавлена
+            if pre_now and not pre_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
                     text=f"✅ Ваша предоплата: {pre_now}₸"
                 )
 
-            # ✅ Добавлен только остаток
-            elif ost_now and not ost_prev:
-                final_pre = pre_now if pre_now else pre_prev
-                if final_pre:
-                    await application.bot.send_message(
-                        chat_id=telegram_id,
-                        text=f"🎉 Вы полностью оплатили урок!\n"
-                             f"Предоплата: {final_pre}₸\nОстаток: {ost_now}₸"
-                    )
-                else:
-                    await application.bot.send_message(
-                        chat_id=telegram_id,
-                        text=f"✅ Ваш остаток: {ost_now}₸"
-                    )
+            # ✅ Остаток добавлен
+            if ost_now and not ost_prev:
+                await application.bot.send_message(
+                    chat_id=telegram_id,
+                    text=f"✅ Ваш остаток: {ost_now}₸"
+                )
 
         previous = current
 
