@@ -258,10 +258,6 @@ async def monitor_payments(application):
         previous = current
 
 
-
-
-
-
 async def on_startup(application):
     application.create_task(monitor_payments(application))
 
