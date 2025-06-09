@@ -1,5 +1,30 @@
 import urllib.parse
 import gspread
+
+def get_all_month_sheets():
+    spreadsheet = gc.open("Автошкола - Запись")
+    return [sheet for sheet in spreadsheet.worksheets() if " - 202" in sheet.title and sheet.title != "Архив"]
+
+def append_to_archive():
+    spreadsheet = gc.open("Автошкола - Запись")
+    try:
+        archive = spreadsheet.worksheet("Архив")
+    except gspread.exceptions.WorksheetNotFound:
+        archive = spreadsheet.add_worksheet("Архив", rows="1000", cols="11")
+        archive.append_row([
+            "Дата", "Время", "Машина", "Инструктор", "Статус",
+            "Имя", "Телефон", "", "Предоплата", "Остаток", "Telegram ID"
+        ])
+
+    existing_rows = archive.get_all_values()
+    existing_set = set(tuple(row) for row in existing_rows[1:])  # без заголовков
+
+    for sheet in get_all_month_sheets():
+        data = sheet.get_all_values()
+        for row in data[1:]:  # Пропустить заголовки
+            if tuple(row) not in existing_set:
+                archive.append_row(row)
+
 import os, json
 import datetime
 
@@ -314,6 +339,7 @@ def main():
 
     # ✅ Запускаем мониторинг предоплаты и остатка
     async def post_init(application):
+        append_to_archive()  # ← Вставили эту строку
         application.create_task(monitor_payments(application))
 
     app.post_init = post_init
