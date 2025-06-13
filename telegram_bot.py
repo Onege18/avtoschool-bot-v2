@@ -56,7 +56,9 @@ scopes = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
+with open("comisiituairkaz-da1a299ae5c8.json") as f:
+    creds_dict = json.load(f)
+
 creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 gc = gspread.authorize(creds)
 
@@ -293,21 +295,27 @@ async def monitor_payments(application):
             ost_now = str(row.get("Остаток", "") or "").strip()
             ost_prev = str(prev.get("Остаток", "") or "").strip()
 
+            # Получаем дату урока
+            lesson_date = row.get("Дата урока")  # замени на точное имя столбца в таблице
+            formatted_date = f" на урок вождения {lesson_date}" if lesson_date else ""
+
             # ✅ Предоплата добавлена
             if pre_now and not pre_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
-                    text=f"✅ Ваша предоплата: {pre_now}₸"
+                    text=f"✅ Ваша предоплата: {pre_now}₸{formatted_date}"
                 )
 
             # ✅ Остаток добавлен
             if ost_now and not ost_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
-                    text=f"✅ Ваш остаток: {ost_now}₸"
+                    text=f"✅ Ваш остаток: {ost_now}₸{formatted_date}"
                 )
 
         previous = current
+
+
 
 async def on_startup(application):
     application.create_task(monitor_payments(application))
