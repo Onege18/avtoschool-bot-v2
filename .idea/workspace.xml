@@ -5,7 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="793e29f1-0bee-4a10-bfc7-672a4a3686af" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/telegram_bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Procfile" beforeDir="false" afterPath="$PROJECT_DIR$/Procfile" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,7 +34,7 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;Python.sheets_test.executor&quot;: &quot;Run&quot;,
-    &quot;Python.telegram_bot.executor&quot;: &quot;Run&quot;,
+    &quot;Python.telegram_bot.executor&quot;: &quot;Profiler&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
@@ -70,7 +71,11 @@
       <workItem from="1749286228005" duration="5127000" />
       <workItem from="1749293543729" duration="399000" />
       <workItem from="1749295132071" duration="15043000" />
-      <workItem from="1749459488657" duration="2647000" />
+      <workItem from="1749459488657" duration="5663000" />
+      <workItem from="1749477624890" duration="174000" />
+      <workItem from="1749489799804" duration="2207000" />
+      <workItem from="1749568403873" duration="8000" />
+      <workItem from="1749792434688" duration="1858000" />
     </task>
     <servers />
   </component>

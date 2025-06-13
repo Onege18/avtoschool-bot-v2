@@ -304,12 +304,26 @@ async def on_startup(application):
     application.create_task(monitor_payments(application))
 
 # Основная функция
-def main():
+from fastapi import FastAPI
+import uvicorn
+
+api_app = FastAPI()
+telegram_app: Application = None  # объявим здесь глобально
+
+@api_app.get("/ping")
+def ping():
+    return {"status": "ok"}
+
+@api_app.on_event("startup")
+async def startup_event():
+    global telegram_app
+
+    # Инициализация job queue и Telegram Application
     scheduler = AsyncIOScheduler(timezone=timezone("Asia/Almaty"))
     job_queue = JobQueue()
     job_queue.scheduler = scheduler
 
-    app = ApplicationBuilder().token(TOKEN).job_queue(job_queue).build()
+    telegram_app = ApplicationBuilder().token(TOKEN).job_queue(job_queue).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -324,18 +338,13 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
-    app.add_handler(conv_handler)
-    app.add_handler(CommandHandler("archive", archive_command))
+    telegram_app.add_handler(conv_handler)
+    telegram_app.add_handler(CommandHandler("archive", archive_command))
 
-    # ✅ Запускаем мониторинг предоплаты и остатка
-    async def post_init(application):
-        application.create_task(monitor_payments(application))
+    # ✅ запускаем мониторинг оплат
+    telegram_app.create_task(monitor_payments(telegram_app))
 
-    app.post_init = post_init
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
-
-
-
+    await telegram_app.initialize()
+    await telegram_app.start()
+    await telegram_app.updater.start_polling()
+    print("🚀 Telegram бот и FastAPI сервер запущены.")
