@@ -60,6 +60,7 @@ with open("comisiituairkaz-da1a299ae5c8.json") as f:
     creds_dict = json.load(f)
 
 creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+
 gc = gspread.authorize(creds)
 
 import logging
@@ -296,7 +297,7 @@ async def monitor_payments(application):
             ost_prev = str(prev.get("Остаток", "") or "").strip()
 
             # Получаем дату урока
-            lesson_date = row.get("Дата урока")  # замени на точное имя столбца в таблице
+            lesson_date = row.get("Дата")  # замени на точное имя столбца в таблице
             formatted_date = f" на урок вождения {lesson_date}" if lesson_date else ""
 
             # ✅ Предоплата добавлена
