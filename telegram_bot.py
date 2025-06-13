@@ -1,14 +1,5 @@
 import urllib.parse
 import gspread
-from fastapi import FastAPI
-import uvicorn
-
-# создаем FastAPI-приложение
-api_app = FastAPI()
-
-@api_app.get("/ping")
-async def ping():
-    return {"status": "alive"}
 
 def get_all_month_sheets():
     spreadsheet = gc.open("Автошкола - Запись")
@@ -56,11 +47,8 @@ scopes = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-with open("comisiituairkaz-da1a299ae5c8.json") as f:
-    creds_dict = json.load(f)
-
+creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
 creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-
 gc = gspread.authorize(creds)
 
 import logging
@@ -296,27 +284,21 @@ async def monitor_payments(application):
             ost_now = str(row.get("Остаток", "") or "").strip()
             ost_prev = str(prev.get("Остаток", "") or "").strip()
 
-            # Получаем дату урока
-            lesson_date = row.get("Дата")  # замени на точное имя столбца в таблице
-            formatted_date = f" на урок вождения {lesson_date}" if lesson_date else ""
-
             # ✅ Предоплата добавлена
             if pre_now and not pre_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
-                    text=f"✅ Ваша предоплата: {pre_now}₸{formatted_date}"
+                    text=f"✅ Ваша предоплата: {pre_now}₸"
                 )
 
             # ✅ Остаток добавлен
             if ost_now and not ost_prev:
                 await application.bot.send_message(
                     chat_id=telegram_id,
-                    text=f"✅ Ваш остаток: {ost_now}₸{formatted_date}"
+                    text=f"✅ Ваш остаток: {ost_now}₸"
                 )
 
         previous = current
-
-
 
 async def on_startup(application):
     application.create_task(monitor_payments(application))
@@ -343,19 +325,17 @@ def main():
     )
 
     app.add_handler(conv_handler)
+    app.add_handler(CommandHandler("archive", archive_command))
 
+    # ✅ Запускаем мониторинг предоплаты и остатка
     async def post_init(application):
         application.create_task(monitor_payments(application))
 
     app.post_init = post_init
-
-    # 🔥 запустить и FastAPI, и Telegram-бот
-    import threading
-    threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=8000)).start()
-
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
+
+
 
