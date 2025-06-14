@@ -316,6 +316,11 @@ def ping():
 
 import asyncio
 
+
+
+
+
+
 @api_app.on_event("startup")
 async def startup_event():
     global telegram_app
@@ -343,9 +348,9 @@ async def startup_event():
     telegram_app.add_handler(CommandHandler("archive", archive_command))
 
     await telegram_app.initialize()
+    telegram_app.create_task(monitor_payments(telegram_app))
 
-    # ✅ не await — просто фоновая задача
-    asyncio.create_task(telegram_app.start())
-    asyncio.create_task(monitor_payments(telegram_app))
+    # ✅ Запуск без await
+    asyncio.create_task(telegram_app.run_polling())
 
     print("✅ Telegram бот и FastAPI сервер запущены")
