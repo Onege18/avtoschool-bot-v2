@@ -342,9 +342,8 @@ async def startup_event():
     telegram_app.add_handler(conv_handler)
     telegram_app.add_handler(CommandHandler("archive", archive_command))
 
+    await telegram_app.initialize()
+    await telegram_app.start()
     telegram_app.create_task(monitor_payments(telegram_app))
 
-    # ✅ только это запускаем
-    asyncio.create_task(telegram_app.run_polling())
-
-    print("🚀 Telegram бот и FastAPI сервер запущены.")
+    print("✅ Telegram бот и FastAPI сервер запущены")
