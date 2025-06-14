@@ -314,11 +314,12 @@ telegram_app: Application = None  # объявим здесь глобально
 def ping():
     return {"status": "ok"}
 
+import asyncio
+
 @api_app.on_event("startup")
 async def startup_event():
     global telegram_app
 
-    # Инициализация job queue и Telegram Application
     scheduler = AsyncIOScheduler(timezone=timezone("Asia/Almaty"))
     job_queue = JobQueue()
     job_queue.scheduler = scheduler
@@ -341,8 +342,9 @@ async def startup_event():
     telegram_app.add_handler(conv_handler)
     telegram_app.add_handler(CommandHandler("archive", archive_command))
 
-    # ✅ запускаем мониторинг оплат
     telegram_app.create_task(monitor_payments(telegram_app))
 
+    # ✅ только это запускаем
+    asyncio.create_task(telegram_app.run_polling())
+
     print("🚀 Telegram бот и FastAPI сервер запущены.")
-    await telegram_app.run_polling()
