@@ -344,7 +344,5 @@ async def startup_event():
     # ✅ запускаем мониторинг оплат
     telegram_app.create_task(monitor_payments(telegram_app))
 
-    await telegram_app.initialize()
-    await telegram_app.start()
-    await telegram_app.updater.start_polling()
     print("🚀 Telegram бот и FastAPI сервер запущены.")
+    await telegram_app.run_polling()
