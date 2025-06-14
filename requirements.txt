@@ -31,3 +31,5 @@ tzlocal==5.3.1
 urllib3==2.4.0
 fastapi
 uvicorn
+fastapi==0.115.2
+uvicorn==0.34.3
