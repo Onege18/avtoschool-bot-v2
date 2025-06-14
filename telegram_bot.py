@@ -348,9 +348,10 @@ async def startup_event():
     telegram_app.add_handler(CommandHandler("archive", archive_command))
 
     await telegram_app.initialize()
+    await telegram_app.start()
+
+    # просто запускаем задачу в фоне — НЕ await!
     telegram_app.create_task(monitor_payments(telegram_app))
 
-    # ✅ Запуск без await
-    asyncio.create_task(telegram_app.run_polling())
-
     print("✅ Telegram бот и FastAPI сервер запущены")
+
