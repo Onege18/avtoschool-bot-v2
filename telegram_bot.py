@@ -217,8 +217,9 @@ async def startup_event():
     )
 
     telegram_app.add_handler(conv_handler)
-    await telegram_app.initialize()
+
     telegram_app.create_task(monitor_payments(telegram_app))
-    await telegram_app.start()
-    await telegram_app.updater.start_polling()
+    await telegram_app.run_polling()
+
+
     print("✅ Бот и сервер запущены.")
