@@ -1,1 +1,1 @@
-web: uvicorn telegram_bot:api_app --host 0.0.0.0 --port $PORT
+web: python telegram_bot.py
