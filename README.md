@@ -1,2 +1,1 @@
-# ns_avtoschool
-# ns_avtoschool
+# Avtoschool Bot V2
