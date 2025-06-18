@@ -1,5 +1,7 @@
 import urllib.parse
 import gspread
+import aiohttp
+
 
 def get_all_month_sheets():
     spreadsheet = gc.open("Автошкола - Запись")
@@ -312,6 +314,10 @@ telegram_app: Application = None  # объявим здесь глобально
 
 @api_app.get("/ping")
 def ping():
+    return {"status": "ok"}
+
+@api_app.head("/ping")
+def ping_head():
     return {"status": "ok"}
 
 import asyncio
