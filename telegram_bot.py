@@ -312,9 +312,10 @@ import uvicorn
 api_app = FastAPI()
 telegram_app: Application = None  # объявим здесь глобально
 
-@api_app.get("/ping")
+@api_app.api_route("/ping", methods=["GET", "HEAD"])
 def ping():
     return {"status": "ok"}
+
 
 @api_app.head("/ping")
 def ping_head():
